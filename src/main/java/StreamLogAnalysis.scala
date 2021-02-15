@@ -1,7 +1,8 @@
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{col, from_json, split, to_timestamp}
+import org.apache.spark.sql.functions.{col, count, from_json, split, to_timestamp, window}
+import org.apache.spark.sql.streaming.OutputMode
 import org.apache.spark.sql.types.{StringType, StructType}
 
 object StreamLogAnalysis {
@@ -12,8 +13,9 @@ object StreamLogAnalysis {
 
     val spark = SparkSession
       .builder()
-      .appName("DDOS Log Analysis").config("spark.sql.warehouse.dir","warehouse/")
+      .appName("DDOS Log Analysis").config("spark.sql.warehouse.dir", "warehouse/")
       .master("local[2]")
+      .enableHiveSupport()
       .getOrCreate()
 
     import spark.implicits._
@@ -34,6 +36,7 @@ object StreamLogAnalysis {
       .option("kafka.bootstrap.servers", "localhost:9092")
       .option("startingOffsets", "earliest")
       .option("enable.auto.commit", false)
+      .option("maxOffsetsPerTrigger", 50000)
       .option("subscribe", "log-events")
       .load().selectExpr("CAST(key AS STRING)", "CAST(value AS STRING) as json")
       .select(from_json(col("json"), schema).as("data")).where("data is not null")
@@ -53,7 +56,21 @@ object StreamLogAnalysis {
         elements(9)
       )
     }).toDF("ip", "logTime", "method", "protocol", "status", "resonseTime")
-    var query = fDf.writeStream.format("console").start()
+
+    val ts = to_timestamp($"logTime", "dd/MMM/yyyy:HH:mm:ss ZZZ")
+    val finalLogDf = fDf.withColumn("logTimeStamp", ts).drop("logtime")
+
+    var query = finalLogDf
+      .where("ip in ('130.235.188.52','168.156.41.239') ")
+     // .withWatermark("logTimeStamp", "5 minutes") //use with append mode
+      .groupBy( window($"logTimeStamp", "10 minutes", "5 minutes"),$"ip")
+      .agg(count(col("ip")).as("count")).where("count >5")
+      .writeStream
+      .format("console")
+      .option("checkpointLocation", "chkpoint/")
+      .outputMode(OutputMode.Complete())
+      .option("truncate", false)
+      .start()
 
     query.awaitTermination()
 
