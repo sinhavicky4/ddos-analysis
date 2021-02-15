@@ -17,6 +17,7 @@ HELP.md
 *.iml
 *.ipr
 chkpoint/
+output/
 
 ### NetBeans ###
 /nbproject/private/
