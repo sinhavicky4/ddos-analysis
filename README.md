@@ -1,7 +1,7 @@
 # Apache Log DDOS Detection
 
 # Install Filebeat
-yum install filebat
+sudo yum install filebeat
 
 # Run filebeat
 sudo filebeat -e -c /opt/filebeat.yml
