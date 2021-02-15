@@ -21,7 +21,7 @@ sudo bin/kafka-server-start.sh config/server.properties
 # Create topic
 sudo bin/kafka-topics.sh --create --topic log-events --bootstrap-server localhost:9092
 
-#Describe
+# Describe
 sudo bin/kafka-topics.sh --describe --topic log-events --bootstrap-server localhost:9092
 
 
