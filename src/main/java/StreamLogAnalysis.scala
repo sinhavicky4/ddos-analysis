@@ -62,7 +62,6 @@ object StreamLogAnalysis {
     val finalLogDf = fDf.withColumn("logTimeStamp", ts).drop("logtime")
 
     var query = finalLogDf
-     // .where("ip in ('130.235.188.52','168.156.41.239') ") //for test
       .withWatermark("logTimeStamp", "1 minutes") //use with append mode
       .groupBy( window($"logTimeStamp", "2 minutes", "1 minutes"),$"ip")
       .agg(count(col("ip")).as("count"))
