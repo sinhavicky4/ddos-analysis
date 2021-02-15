@@ -1,0 +1,8 @@
+filebeat.inputs:
+ - type: log
+   paths:
+     - "/home/priynashu/phData/*.log"
+
+output.kafka:
+  hosts: ["localhost:9092"]
+  topic: "log-events"
